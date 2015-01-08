@@ -1,5 +1,6 @@
 package com.m2dl.helloandroid;
 
+import android.os.Handler;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.view.Menu;
@@ -9,12 +10,33 @@ import android.widget.TextView;
 
 public class HelloAndroid extends ActionBarActivity {
 
+    private Handler mHandler;
+    private Integer counter;
+    private TextView textView;
+
+    private Runnable mUpdateTimeTask = new Runnable() {
+        public void run() {
+            --counter;
+            textView.setText(counter.toString());
+            if (counter < 0) {
+                System.exit(RESULT_OK);
+            }
+            mHandler.postDelayed(this, 1000);
+        }
+    };
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        TextView tv = new TextView(this);
-        tv.setText("Hello, Android");
-        setContentView(tv);
+        counter = 5;
+
+        textView = new TextView(this);
+        textView.setText(counter.toString());
+
+        mHandler = new Handler();
+        mHandler.postDelayed(mUpdateTimeTask, 1000);
+
+        setContentView(textView);
     }
 
 
