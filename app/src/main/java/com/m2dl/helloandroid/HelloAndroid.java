@@ -1,7 +1,9 @@
 package com.m2dl.helloandroid;
 
+import android.content.Context;
 import android.os.Build;
 import android.os.Handler;
+import android.os.Vibrator;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.view.Menu;
@@ -18,6 +20,11 @@ public class HelloAndroid extends ActionBarActivity {
         TextView textView = new TextView(this);
         textView.setText("Build model : " + Build.MODEL);
         setContentView(textView);
+
+        if (Build.MODEL != "sdk") {
+            ((Vibrator) getSystemService(Context.VIBRATOR_SERVICE)).vibrate(1000);
+        }
+
     }
 
 
