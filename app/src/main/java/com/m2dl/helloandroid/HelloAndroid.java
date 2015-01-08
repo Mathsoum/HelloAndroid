@@ -2,29 +2,31 @@ package com.m2dl.helloandroid;
 
 import android.content.Context;
 import android.os.Build;
-import android.os.Handler;
 import android.os.Vibrator;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MotionEvent;
+import android.view.View;
 import android.widget.TextView;
 
 
-public class HelloAndroid extends ActionBarActivity {
+public class HelloAndroid extends ActionBarActivity implements View.OnTouchListener {
+
+    private TextView textView;
+    private Integer counter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        TextView textView = new TextView(this);
+        counter = 0;
+
+        textView = new TextView(this);
         textView.setText("Build model : " + Build.MODEL);
+        textView.setOnTouchListener(this);
         setContentView(textView);
-
-        if (Build.MODEL != "sdk") {
-            ((Vibrator) getSystemService(Context.VIBRATOR_SERVICE)).vibrate(1000);
-        }
-
     }
 
 
@@ -48,5 +50,19 @@ public class HelloAndroid extends ActionBarActivity {
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    public boolean onTouch(View v, MotionEvent event) {
+        float posx=event.getX();
+        float posy=event.getY();
+
+        ++counter;
+        if (counter > 10) {
+            System.exit(RESULT_OK);
+        }
+
+        textView.setText("Entry #" + counter + "\nPosition X : " + posx + "\nPosition Y : " + posy);
+        return true;
     }
 }
