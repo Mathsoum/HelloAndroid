@@ -1,36 +1,34 @@
 package com.m2dl.helloandroid;
 
 import android.app.Activity;
-import android.hardware.Sensor;
-import android.hardware.SensorEvent;
-import android.hardware.SensorEventListener;
-import android.hardware.SensorManager;
-import android.os.Build;
+import android.content.ContentResolver;
+import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.Color;
+import android.graphics.drawable.BitmapDrawable;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
+import android.provider.MediaStore;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
+
+import java.io.File;
 
 
-public class HelloAndroid extends Activity implements SensorEventListener {
-
-    private TextView textView;
-    private SensorManager mSensorManager;
-    private Sensor mMagneticField;
-
+public class HelloAndroid extends Activity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_hello_android);
 
-        textView = new TextView(this);
-        textView.setText("Build model : " + Build.MODEL);
-
-        mSensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
-        // No magnetic sensor on my phone sorry...
-        mMagneticField = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-
-        setContentView(textView);
+        takePhoto(findViewById(R.id.imageView));
     }
 
 
@@ -56,38 +54,66 @@ public class HelloAndroid extends Activity implements SensorEventListener {
         return super.onOptionsItemSelected(item);
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-        mSensorManager.registerListener(this, mMagneticField, SensorManager.SENSOR_DELAY_NORMAL);
+    private Uri imageUri;
+    private static final int CAPTURE_IMAGE_ACTIVITY_REQUEST_CODE = 100;
+
+    //On veut prendre une photo
+    public void takePhoto(View view) {
+        //Création d'un intent
+        Intent intent = new Intent("android.media.action.IMAGE_CAPTURE");
+
+        //Création du fichier image
+        File photo = new File(Environment.getExternalStorageDirectory(), "Pic.jpg");
+        intent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(photo));
+        imageUri = Uri.fromFile(photo);
+
+        //On lance l'intent
+        startActivityForResult(intent, CAPTURE_IMAGE_ACTIVITY_REQUEST_CODE);
     }
 
+    //On a reçu le résultat d'une activité
     @Override
-    protected void onStop() {
-        mSensorManager.unregisterListener(this, mMagneticField);
-        super.onStop();
-    }
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        switch (requestCode) {
+            //Si l'activité était une prise de photo
+            case CAPTURE_IMAGE_ACTIVITY_REQUEST_CODE:
+                if (resultCode == Activity.RESULT_OK) {
+                    Uri selectedImage = imageUri;
+                    getContentResolver().notifyChange(selectedImage, null);
+                    ImageView imageView = (ImageView) findViewById(R.id.imageView);
+                    ContentResolver cr = getContentResolver();
+                    Bitmap bitmap;
+                    try {
+                        bitmap = android.provider.MediaStore.Images.Media
+                                .getBitmap(cr, selectedImage);
 
-    @Override
-    public void onSensorChanged(SensorEvent event) {
-        int sensor = event.sensor.getType();
-        float [] values = event.values;
+                        imageView.setImageBitmap(bitmap);
+                        //Affichage de l'infobulle
+                        Toast.makeText(this, selectedImage.toString(),
+                                Toast.LENGTH_LONG).show();
 
-        synchronized (this) {
-            if (sensor == Sensor.TYPE_ACCELEROMETER) {
-                float magField_x = values[0];
-                float magField_y = values[1];
-                float magField_z = values[2];
+                        int count = 0;
+                        for (int i = 0; i < bitmap.getWidth(); ++i) {
+                            for (int j = 0; j<bitmap.getHeight(); ++j) {
+                                int pixel = bitmap.getPixel(i, j);
+                                int red = Color.red(pixel);
+                                int green = Color.green(pixel);
+                                if(red > green) {
+                                    ++count;
+                                }
+                            }
+                        }
 
-                textView.setText("X value : " + magField_x
-                                + "\nY value : " + magField_y
-                                + "\nZ value : " + magField_z);
-            }
+                        TextView textView = (TextView) findViewById(R.id.text);
+                        textView.setText("Total pixel count : " + bitmap.getHeight()*bitmap.getWidth()
+                                + "\nPixel count where red > green : " + count);
+                    } catch (Exception e) {
+                        Toast.makeText(this, "Failed to load", Toast.LENGTH_SHORT)
+                                .show();
+                        Log.e("Camera", "Picture", e);
+                    }
+                }
         }
-    }
-
-    @Override
-    public void onAccuracyChanged(Sensor sensor, int accuracy) {
-
     }
 }
