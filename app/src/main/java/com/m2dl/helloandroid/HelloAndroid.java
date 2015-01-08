@@ -1,31 +1,35 @@
 package com.m2dl.helloandroid;
 
-import android.content.Context;
+import android.app.Activity;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.os.Build;
-import android.os.Vibrator;
-import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.MotionEvent;
-import android.view.View;
 import android.widget.TextView;
 
 
-public class HelloAndroid extends ActionBarActivity implements View.OnTouchListener {
+public class HelloAndroid extends Activity implements SensorEventListener {
 
     private TextView textView;
-    private Integer counter;
+    private SensorManager mSensorManager;
+    private Sensor mMagneticField;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        counter = 0;
-
         textView = new TextView(this);
         textView.setText("Build model : " + Build.MODEL);
-        textView.setOnTouchListener(this);
+
+        mSensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
+        // No magnetic sensor on my phone sorry...
+        mMagneticField = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+
         setContentView(textView);
     }
 
@@ -53,16 +57,37 @@ public class HelloAndroid extends ActionBarActivity implements View.OnTouchListe
     }
 
     @Override
-    public boolean onTouch(View v, MotionEvent event) {
-        float posx=event.getX();
-        float posy=event.getY();
+    protected void onResume() {
+        super.onResume();
+        mSensorManager.registerListener(this, mMagneticField, SensorManager.SENSOR_DELAY_NORMAL);
+    }
 
-        ++counter;
-        if (counter > 10) {
-            System.exit(RESULT_OK);
+    @Override
+    protected void onStop() {
+        mSensorManager.unregisterListener(this, mMagneticField);
+        super.onStop();
+    }
+
+    @Override
+    public void onSensorChanged(SensorEvent event) {
+        int sensor = event.sensor.getType();
+        float [] values = event.values;
+
+        synchronized (this) {
+            if (sensor == Sensor.TYPE_ACCELEROMETER) {
+                float magField_x = values[0];
+                float magField_y = values[1];
+                float magField_z = values[2];
+
+                textView.setText("X value : " + magField_x
+                                + "\nY value : " + magField_y
+                                + "\nZ value : " + magField_z);
+            }
         }
+    }
 
-        textView.setText("Entry #" + counter + "\nPosition X : " + posx + "\nPosition Y : " + posy);
-        return true;
+    @Override
+    public void onAccuracyChanged(Sensor sensor, int accuracy) {
+
     }
 }
